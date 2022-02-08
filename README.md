@@ -1,4 +1,4 @@
-## Catchment Enricher Summary
+## Catchment Enricher
 This repository contains capabilities to enrich catchments with landcover information for a range of flood recurrence intervals. This information can be used to better calibrate synthetic rating curves used in inundation techniques based in the Height Above Nearest Drainage technique.
 
 This repository is meant to complement the techniques being developed by the NOAA Office of Water Prediction [Inundation Mapping Repository](https://github.com/NOAA-OWP/inundation-mapping).
