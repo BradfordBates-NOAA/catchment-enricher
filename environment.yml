@@ -1,4 +1,4 @@
-name: ras2fim
+name: catchment_enricher
 channels:
   - anaconda
   - conda-forge
@@ -117,4 +117,3 @@ dependencies:
   - xz=5.2.5=h62dcd97_0
   - zlib=1.2.11=h62dcd97_4
   - zstd=1.4.9=h19a0ad4_0
-prefix: C:\Users\civil\anaconda3\envs\ras2fim
