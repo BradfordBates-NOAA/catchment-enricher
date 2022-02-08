@@ -1,1 +1,11 @@
+## Catchment Enricher Summary
+This repository contains capabilities to enrich catchments with landcover information for a range of flood recurrence intervals. This information can be used to better calibrate synthetic rating curves used in inundation techniques based in the Height Above Nearest Drainage technique.
 
+This repository is meant to complement the techniques being developed by the NOAA Office of Water Prediction [Inundation Mapping Repository](https://github.com/NOAA-OWP/inundation-mapping).
+
+### Abstract
+Floods are the most frequent and most expensive natural disaster in the United States. As the effects of climate change are expected to increase into the 21st century, the projected increase in frequency and intensity of large flood events will likely cause severe economic, environmental, and societal damages. Therefore, it is vital to accurately predict the extent and duration of flood events to provide real-time, actionable hydrologic intelligence to forecasters, as well as to develop disaster mitigation strategies for communities.
+
+The National Water Model (NWM) is a hydrologic model that simulates streamflow for the United States. The NOAA National Water Center (NWC) uses the NWM in conjunction with the Height Above Nearest Drainage (HAND) technique and HAND-derived synthetic stage-discharge rating curves to approximate inundation extent for the entire NWM domain. The NWC has developed capabilities to estimate the error associated with HAND-derived synthetic rating curves for catchments where truth data, such as USGS rating curves or high-resolution hydraulic models, exist. It is thought that by relating error to catchment attributes, such as slope or land cover, error can be predicted (and ultimately compensated for) in catchments where no truth data exist.
+
+In this study, we examine land cover characteristics of each catchment in the NWM domain using the National Land Cover Database (NLCD). We develop a framework to determine land cover characteristics of catchments in the NWM domain, as well as the land cover present in inundated areas given a range of flood recurrence scenarios. The information provided by this framework can be used to better calibrate synthetic rating curves and improve inundation mapping.
