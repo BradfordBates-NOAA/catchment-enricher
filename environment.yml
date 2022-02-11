@@ -96,7 +96,6 @@ dependencies:
   - rasterio=1.1.1=py38h2617b1b_0
   - rioxarray=0.6.1=pyhd8ed1ab_0
   - rtree=0.9.7=py38h2eaa2aa_1
-  - scikit-learn=0.24.2=py38hf11a4ad_1
   - scipy=1.6.2=py38h66253e8_1
   - setuptools=52.0.0=py38haa95532_0
   - shapely=1.7.1=py38h210f175_0
