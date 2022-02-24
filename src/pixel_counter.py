@@ -26,6 +26,7 @@ import sys
 # Import data analysis library
 import pandas as pd
 import argparse
+from pandas import DataFrame
 
 # Set up error handler
 gdal.PushErrorHandler('CPLQuietErrorHandler')
@@ -179,13 +180,18 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--raster',
                         help='Path to raster file.',
                         required=True)
+    parser.add_argument('-c', '--csv',
+                        help='Path to export csv file.',
+                        required=True)
     # Assign variables from arguments.
     args = vars(parser.parse_args())
     vector = args['vector']
     raster = args['raster']
+    export = args['csv']
     stats = zonal_stats(vector,raster)
 
 
-    from pandas import DataFrame
+    # Export CSV
     df = pd.DataFrame(stats)
     print(df)
+    df.to_csv(export, sep='\t', index=False)
