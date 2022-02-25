@@ -7,7 +7,6 @@ import traceback
 from pixel_counter import zonal_stats
 
 
-
 def queue_zonal_stats(fim_run_dir, raster, output_dir, job_number):
     """
     This function sets up multiprocessing of the process_zonal_stats() function.
