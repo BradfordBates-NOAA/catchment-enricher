@@ -2,9 +2,9 @@
 Written by:
 Anuska Narayanan (The University of Alabama Department of Geography, anarayanan1@crimson.ua.edu;
 Sophie Williams (The University of Alabama Department of Geography, scwilliams8@crimson.ua.edu; and
-Brad Bates (NOAA, Lynker, and the National Water Center, bradford.bates@noaa.gov
+Brad Bates (NOAA, Lynker, and the National Water Center, bradford.bates@noaa.gov)
 
-Derived from a Python version of a zonal statistics function writted by Matthew Perry (@perrygeo).
+Derived from a Python version of a zonal statistics function written by Matthew Perry (@perrygeo).
 
 Description: This script isolates the number of pixels per class of a raster within the outlines of
 one or more polygons and displays them in a table. It accomplishes this by rasterizing the vector file,
