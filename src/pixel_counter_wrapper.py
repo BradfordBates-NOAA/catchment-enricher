@@ -29,6 +29,7 @@ def queue_zonal_stats(fim_run_dir, raster, output_dir, job_number):
         csv = os.path.join(output_dir, fim_version + '_' + huc + '_pixel_counts.csv')
         procs_list.append([vector, csv, raster])
         
+    # Initiate multiprocessing
     with Pool(processes=job_number) as pool:
         pool.map(process_zonal_stats, procs_list)
 
