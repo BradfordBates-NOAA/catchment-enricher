@@ -134,28 +134,28 @@ def zonal_stats(vector_path, raster_path, nodata_value=None, global_src_extent=F
         # Acquires information for table on each raster attribute per poly feature
         feature_stats = {
             'FID': int(feat.GetFID()),
-            'HydroID': feat.GetField('HydroID'),
-            'TotalPixels': int(masked.count()),
-            '11': np.count_nonzero((masked == [11])),
-            '12': np.count_nonzero((masked == [12])),
-            '21': np.count_nonzero((masked == [21])),
-            '22': np.count_nonzero((masked == [22])),
-            '23': np.count_nonzero((masked == [23])),
-            '24': np.count_nonzero((masked == [24])),
-            '31': np.count_nonzero((masked == [31])),
-            '41': np.count_nonzero((masked == [41])),
-            '42': np.count_nonzero((masked == [42])),
-            '43': np.count_nonzero((masked == [43])),
-            '51': np.count_nonzero((masked == [51])),
-            '52': np.count_nonzero((masked == [52])),
-            '71': np.count_nonzero((masked == [71])),
-            '72': np.count_nonzero((masked == [72])),
-            '73': np.count_nonzero((masked == [73])),
-            '74': np.count_nonzero((masked == [74])),
-            '81': np.count_nonzero((masked == [81])),
-            '82': np.count_nonzero((masked == [82])),
-            '90': np.count_nonzero((masked == [90])),
-            '95': np.count_nonzero((masked == [95])),
+            'hydroid': feat.GetField('HydroID'),
+            'total_pixels': int(masked.count()),
+            'lulc_11': np.count_nonzero((masked == [11])),
+            'lulc_12': np.count_nonzero((masked == [12])),
+            'lulc_21': np.count_nonzero((masked == [21])),
+            'lulc_22': np.count_nonzero((masked == [22])),
+            'lulc_23': np.count_nonzero((masked == [23])),
+            'lulc_24': np.count_nonzero((masked == [24])),
+            'lulc_31': np.count_nonzero((masked == [31])),
+            'lulc_41': np.count_nonzero((masked == [41])),
+            'lulc_42': np.count_nonzero((masked == [42])),
+            'lulc_43': np.count_nonzero((masked == [43])),
+            'lulc_51': np.count_nonzero((masked == [51])),
+            'lulc_52': np.count_nonzero((masked == [52])),
+            'lulc_71': np.count_nonzero((masked == [71])),
+            'lulc_72': np.count_nonzero((masked == [72])),
+            'lulc_73': np.count_nonzero((masked == [73])),
+            'lulc_74': np.count_nonzero((masked == [74])),
+            'lulc_81': np.count_nonzero((masked == [81])),
+            'lulc_82': np.count_nonzero((masked == [82])),
+            'lulc_90': np.count_nonzero((masked == [90])),
+            'lulc_95': np.count_nonzero((masked == [95])),
         }
         stats.append(feature_stats)
 
@@ -194,4 +194,4 @@ if __name__ == "__main__":
     # Export CSV
     df = pd.DataFrame(stats)
     print(df)
-    df.to_csv(csv, index=False)
+    df.to_csv(csv)
