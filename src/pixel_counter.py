@@ -199,10 +199,12 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     vector = args['vector']
     raster = args['raster']
-    export = args['csv']
-    stats = zonal_stats(vector, raster)
+
+    csv = args['csv']
+    stats = zonal_stats(vector,raster)
+
 
     # Export CSV
     df = pd.DataFrame(stats)
     print(df)
-    df.to_csv(export, sep='\t', index=False)
+    df.to_csv(csv, index=False)
