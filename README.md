@@ -3,7 +3,7 @@ This repository contains capabilities to enrich catchments with landcover inform
 
 This repository is meant to complement the techniques being developed by the NOAA Office of Water Prediction [Inundation Mapping Repository](https://github.com/NOAA-OWP/inundation-mapping).
 
-### Abstract
+### Research Abstract
 Floods are the most frequent and most expensive natural disaster in the United States. As the effects of climate change are expected to increase into the 21st century, the projected increase in frequency and intensity of large flood events will likely cause severe economic, environmental, and societal damages. Therefore, it is vital to accurately predict the extent and duration of flood events to provide real-time, actionable hydrologic intelligence to forecasters, as well as to develop disaster mitigation strategies for communities.
 
 The National Water Model (NWM) is a hydrologic model that simulates streamflow for the United States. The NOAA National Water Center (NWC) uses the NWM in conjunction with the Height Above Nearest Drainage (HAND) technique and HAND-derived synthetic stage-discharge rating curves to approximate inundation extent for the entire NWM domain. The NWC has developed capabilities to estimate the error associated with HAND-derived synthetic rating curves for catchments where truth data, such as USGS rating curves or high-resolution hydraulic models, exist. It is thought that by relating error to catchment attributes, such as slope or land cover, error can be predicted (and ultimately compensated for) in catchments where no truth data exist.
