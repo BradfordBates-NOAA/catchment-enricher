@@ -26,6 +26,7 @@ def queue_zonal_stats(fim_run_dir, raster_path_dict, output_dir, job_number):
     for huc in fim_run_dir_list:
         vector = os.path.join(fim_run_dir, huc, 'demDerived_reaches_split_filtered_addedAttributes_crosswalked.gpkg')
         csv = os.path.join(output_dir, fim_version + '_' + huc + '_pixel_counts.csv')
+        print(csv)
         procs_list.append([vector, csv, raster_path_dict])
         
     # Initiate multiprocessing
