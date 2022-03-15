@@ -28,6 +28,8 @@ import pandas as pd
 import argparse
 from pandas import DataFrame
 
+from pixel_counter_functions import (get_nlcd_counts, get_levee_counts, get_bridge_counts)
+
 # Set up error handler
 gdal.PushErrorHandler('CPLQuietErrorHandler')
 
@@ -50,57 +52,38 @@ def bbox_to_pixel_offsets(gt, bbox):
 
 
 # Main function that determines zonal statistics of raster classes in a polygon area
-def zonal_stats(vector_path, raster_path, nodata_value=None, global_src_extent=False):
-    # Opens raster file and sets path
-    rds = gdal.Open(raster_path, GA_ReadOnly)
-    assert rds
-    rb = rds.GetRasterBand(1)
-    rgt = rds.GetGeoTransform()
-
-    if nodata_value:
-        nodata_value = float(nodata_value)
-        rb.SetNoDataValue(nodata_value)
-    # Opens vector file and sets path
-    vds = ogr.Open(vector_path)
-    vlyr = vds.GetLayer(0)
-
-    # Creates an in-memory numpy array of the source raster data covering the whole extent of the vector layer
-    if global_src_extent:
-        # use global source extent
-        # useful only when disk IO or raster scanning inefficiencies are your limiting factor
-        # advantage: reads raster data in one pass
-        # disadvantage: large vector extents may have big memory requirements
-        src_offset = bbox_to_pixel_offsets(rgt, vlyr.GetExtent())
-        src_array = rb.ReadAsArray(*src_offset)
-
-        # calculate new geotransform of the layer subset
-        new_gt = (
-            (rgt[0] + (src_offset[0] * rgt[1])),
-            rgt[1],
-            0.0,
-            (rgt[3] + (src_offset[1] * rgt[5])),
-            0.0,
-            rgt[5]
-        )
-
-    mem_drv = ogr.GetDriverByName('Memory')
-    driver = gdal.GetDriverByName('MEM')
-
-    # Loop through vectors, as many as exist in file
-    # Creates new list to contain their stats
-    stats = []
-    feat = vlyr.GetNextFeature()
-    while feat is not None:
-
-        if not global_src_extent:
-            # use local source extent
-            # fastest option when you have fast disks and well indexed raster (ie tiled Geotiff)
-            # advantage: each feature uses the smallest raster chunk
-            # disadvantage: lots of reads on the source raster
-            src_offset = bbox_to_pixel_offsets(rgt, feat.geometry().GetEnvelope())
+def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_extent=False):
+    
+    # Loop through different raster paths in the raster_path_dict and
+    # perform zonal statistics on the files.
+    for layer in raster_path_dict:
+        raster_path = raster_path_dict[layer]
+        if raster_path == "":  # Only process if a raster path is provided
+            break
+    
+        # Opens raster file and sets path
+        rds = gdal.Open(raster_path, GA_ReadOnly)
+        assert rds
+        rb = rds.GetRasterBand(1)
+        rgt = rds.GetGeoTransform()
+    
+        if nodata_value:
+            nodata_value = float(nodata_value)
+            rb.SetNoDataValue(nodata_value)
+        # Opens vector file and sets path
+        vds = ogr.Open(vector_path)
+        vlyr = vds.GetLayer(0)
+    
+        # Creates an in-memory numpy array of the source raster data covering the whole extent of the vector layer
+        if global_src_extent:
+            # use global source extent
+            # useful only when disk IO or raster scanning inefficiencies are your limiting factor
+            # advantage: reads raster data in one pass
+            # disadvantage: large vector extents may have big memory requirements
+            src_offset = bbox_to_pixel_offsets(rgt, vlyr.GetExtent())
             src_array = rb.ReadAsArray(*src_offset)
-
-            # calculate new geotransform of the feature subset
+    
+            # calculate new geotransform of the layer subset
             new_gt = (
                 (rgt[0] + (src_offset[0] * rgt[1])),
                 rgt[1],
@@ -109,71 +92,69 @@ def zonal_stats(vector_path, raster_path, nodata_value=None, global_src_extent=F
                 0.0,
                 rgt[5]
             )
-
-        # Create a temporary vector layer in memory
-        mem_ds = mem_drv.CreateDataSource('out')
-        mem_layer = mem_ds.CreateLayer('poly', None, ogr.wkbPolygon)
-        mem_layer.CreateFeature(feat.Clone())
-
-        # Rasterize temporary vector layer
-        rvds = driver.Create('', src_offset[2], src_offset[3], 1, gdal.GDT_Byte)
-        rvds.SetGeoTransform(new_gt)
-        gdal.RasterizeLayer(rvds, [1], mem_layer, burn_values=[1])
-        rv_array = rvds.ReadAsArray()
-
-        # Mask the source data array with our current feature and get statistics (pixel count) of masked areas
-        # we take the logical_not to flip 0<->1 to get the correct mask effect
-        # we also mask out nodata values explictly
-        masked = np.ma.MaskedArray(
-            src_array,
-            mask=np.logical_or(
-                src_array == nodata_value,
-                np.logical_not(rv_array)
-            )
-        )
-        # Acquires information for table on each raster attribute per poly feature
-        feature_stats = {
-            'FID': int(feat.GetFID()),
-            'HydroID': feat.GetField('HydroID'),
-            'TotalPixels': int(masked.count()),
-            'lulc_11': np.count_nonzero((masked == [11])),
-            'lulc_12': np.count_nonzero((masked == [12])),
-            'lulc_21': np.count_nonzero((masked == [21])),
-            'lulc_22': np.count_nonzero((masked == [22])),
-            'lulc_23': np.count_nonzero((masked == [23])),
-            'lulc_24': np.count_nonzero((masked == [24])),
-            'lulc_31': np.count_nonzero((masked == [31])),
-            'lulc_41': np.count_nonzero((masked == [41])),
-            'lulc_42': np.count_nonzero((masked == [42])),
-            'lulc_43': np.count_nonzero((masked == [43])),
-            'lulc_51': np.count_nonzero((masked == [51])),
-            'lulc_52': np.count_nonzero((masked == [52])),
-            'lulc_71': np.count_nonzero((masked == [71])),
-            'lulc_72': np.count_nonzero((masked == [72])),
-            'lulc_73': np.count_nonzero((masked == [73])),
-            'lulc_74': np.count_nonzero((masked == [74])),
-            'lulc_81': np.count_nonzero((masked == [81])),
-            'lulc_82': np.count_nonzero((masked == [82])),
-            'lulc_90': np.count_nonzero((masked == [90])),
-            'lulc_95': np.count_nonzero((masked == [95])),
-            'lulc_1': np.count_nonzero((masked == [11])) + np.count_nonzero((masked == [12])),
-            'lulc_2': np.count_nonzero((masked == [21])) + np.count_nonzero((masked == [22]))
-                      + np.count_nonzero((masked == [23])) + np.count_nonzero((masked == [24])),
-            'lulc_3': np.count_nonzero((masked == [31])),
-            'lulc_4': np.count_nonzero((masked == [41])) + np.count_nonzero((masked == [42]))
-                      + np.count_nonzero((masked == [43])),
-            'lulc_5': np.count_nonzero((masked == [51])) + np.count_nonzero((masked == [52])),
-            'lulc_7': np.count_nonzero((masked == [71])) + np.count_nonzero((masked == [72]))
-                      + np.count_nonzero((masked == [73])) + np.count_nonzero((masked == [74])),
-            'lulc_8': np.count_nonzero((masked == [81])) + np.count_nonzero((masked == [82])),
-            'lulc_9': np.count_nonzero((masked == [90])) + np.count_nonzero((masked == [95]))
-
-        }
-        stats.append(feature_stats)
-
-        rvds = None
-        mem_ds = None
+    
+        mem_drv = ogr.GetDriverByName('Memory')
+        driver = gdal.GetDriverByName('MEM')
+    
+        # Loop through vectors, as many as exist in file
+        # Creates new list to contain their stats
+        stats = []
         feat = vlyr.GetNextFeature()
+        while feat is not None:
+    
+            if not global_src_extent:
+                # use local source extent
+                # fastest option when you have fast disks and well indexed raster (ie tiled Geotiff)
+                # advantage: each feature uses the smallest raster chunk
+                # disadvantage: lots of reads on the source raster
+                src_offset = bbox_to_pixel_offsets(rgt, feat.geometry().GetEnvelope())
+                src_array = rb.ReadAsArray(*src_offset)
+    
+                # calculate new geotransform of the feature subset
+                new_gt = (
+                    (rgt[0] + (src_offset[0] * rgt[1])),
+                    rgt[1],
+                    0.0,
+                    (rgt[3] + (src_offset[1] * rgt[5])),
+                    0.0,
+                    rgt[5]
+                )
+    
+            # Create a temporary vector layer in memory
+            mem_ds = mem_drv.CreateDataSource('out')
+            mem_layer = mem_ds.CreateLayer('poly', None, ogr.wkbPolygon)
+            mem_layer.CreateFeature(feat.Clone())
+    
+            # Rasterize temporary vector layer
+            rvds = driver.Create('', src_offset[2], src_offset[3], 1, gdal.GDT_Byte)
+            rvds.SetGeoTransform(new_gt)
+            gdal.RasterizeLayer(rvds, [1], mem_layer, burn_values=[1])
+            rv_array = rvds.ReadAsArray()
+    
+            # Mask the source data array with our current feature and get statistics (pixel count) of masked areas
+            # we take the logical_not to flip 0<->1 to get the correct mask effect
+            # we also mask out nodata values explictly
+            masked = np.ma.MaskedArray(
+                src_array,
+                mask=np.logical_or(
+                    src_array == nodata_value,
+                    np.logical_not(rv_array)
+                )
+            )
+                
+            # Call different counter functions depending on the raster's source.
+            if layer == "nlcd":
+                feature_stats = get_nlcd_counts(feat, masked)
+            if layer == "levees":
+                feature_stats = get_levee_counts(feat, masked)
+            if layer == "bridges":
+                feature_stats = get_bridge_counts(feat, masked)
+            
+            stats.append(feature_stats)
+    
+            rvds = None
+            mem_ds = None
+            feat = vlyr.GetNextFeature()
 
     vds = None
     rds = None
@@ -189,22 +170,34 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--vector',
                         help='Path to vector file.',
                         required=True)
-    parser.add_argument('-r', '--raster',
-                        help='Path to raster file.',
-                        required=True)
+    parser.add_argument('-n', '--nlcd',
+                        help='Path to National Land Cover Database raster file.',
+                        required=False,
+                        default="")
+    parser.add_argument('-l', '--levees',
+                        help='Path to levees raster file.',
+                        required=False,
+                        default="")
+    parser.add_argument('-b', '--bridges',
+                        help='Path to bridges file.',
+                        required=False,
+                        default="")
     parser.add_argument('-c', '--csv',
                         help='Path to export csv file.',
                         required=True)
     # Assign variables from arguments.
     args = vars(parser.parse_args())
     vector = args['vector']
-    raster = args['raster']
+    nlcd = args['nlcd']
+    levees = args['levees']
+    bridges = args['bridges']
 
     csv = args['csv']
-    stats = zonal_stats(vector,raster)
 
+    raster_path_dict = {'nlcd': nlcd, 'levees': levees, 'bridges': bridges}
+    
+    stats = zonal_stats(vector, raster_path_dict)
 
     # Export CSV
     df = pd.DataFrame(stats)
-    print(df)
     df.to_csv(csv, index=False)
