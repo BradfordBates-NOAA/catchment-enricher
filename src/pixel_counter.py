@@ -2,9 +2,9 @@
 Written by:
 Anuska Narayanan (The University of Alabama Department of Geography, anarayanan1@crimson.ua.edu;
 Sophie Williams (The University of Alabama Department of Geography, scwilliams8@crimson.ua.edu; and
-Brad Bates (NOAA, Lynker, and the National Water Center, bradford.bates@noaa.gov
+Brad Bates (NOAA, Lynker, and the National Water Center, bradford.bates@noaa.gov)
 
-Derived from a Python version of a zonal statistics function writted by Matthew Perry (@perrygeo).
+Derived from a Python version of a zonal statistics function written by Matthew Perry (@perrygeo).
 
 Description: This script isolates the number of pixels per class of a raster within the outlines of
 one or more polygons and displays them in a table. It accomplishes this by rasterizing the vector file,
@@ -134,8 +134,8 @@ def zonal_stats(vector_path, raster_path, nodata_value=None, global_src_extent=F
         # Acquires information for table on each raster attribute per poly feature
         feature_stats = {
             'FID': int(feat.GetFID()),
-            'hydroid': feat.GetField('HydroID'),
-            'total_pixels': int(masked.count()),
+            'HydroID': feat.GetField('HydroID'),
+            'TotalPixels': int(masked.count()),
             'lulc_11': np.count_nonzero((masked == [11])),
             'lulc_12': np.count_nonzero((masked == [12])),
             'lulc_21': np.count_nonzero((masked == [21])),
@@ -156,6 +156,18 @@ def zonal_stats(vector_path, raster_path, nodata_value=None, global_src_extent=F
             'lulc_82': np.count_nonzero((masked == [82])),
             'lulc_90': np.count_nonzero((masked == [90])),
             'lulc_95': np.count_nonzero((masked == [95])),
+            'lulc_1': np.count_nonzero((masked == [11])) + np.count_nonzero((masked == [12])),
+            'lulc_2': np.count_nonzero((masked == [21])) + np.count_nonzero((masked == [22]))
+                      + np.count_nonzero((masked == [23])) + np.count_nonzero((masked == [24])),
+            'lulc_3': np.count_nonzero((masked == [31])),
+            'lulc_4': np.count_nonzero((masked == [41])) + np.count_nonzero((masked == [42]))
+                      + np.count_nonzero((masked == [43])),
+            'lulc_5': np.count_nonzero((masked == [51])) + np.count_nonzero((masked == [52])),
+            'lulc_7': np.count_nonzero((masked == [71])) + np.count_nonzero((masked == [72]))
+                      + np.count_nonzero((masked == [73])) + np.count_nonzero((masked == [74])),
+            'lulc_8': np.count_nonzero((masked == [81])) + np.count_nonzero((masked == [82])),
+            'lulc_9': np.count_nonzero((masked == [90])) + np.count_nonzero((masked == [95]))
+
         }
         stats.append(feature_stats)
 
@@ -170,8 +182,8 @@ def zonal_stats(vector_path, raster_path, nodata_value=None, global_src_extent=F
 
 # Creates and prints dataframe containing desired statistics
 if __name__ == "__main__":
-    #opts = {'VECTOR': sys.argv[1:], 'RASTER': sys.argv[2:]}
-    #stats = zonal_stats(opts['VECTOR'], opts['RASTER'])
+    # opts = {'VECTOR': sys.argv[1:], 'RASTER': sys.argv[2:]}
+    # stats = zonal_stats(opts['VECTOR'], opts['RASTER'])
 
     parser = argparse.ArgumentParser(description='Computes pixel counts for raster classes within a vector area.')
     parser.add_argument('-v', '--vector',
@@ -187,6 +199,7 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     vector = args['vector']
     raster = args['raster']
+
     csv = args['csv']
     stats = zonal_stats(vector,raster)
 
@@ -194,4 +207,4 @@ if __name__ == "__main__":
     # Export CSV
     df = pd.DataFrame(stats)
     print(df)
-    df.to_csv(csv)
+    df.to_csv(csv, index=False)
