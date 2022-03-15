@@ -7,7 +7,7 @@ import traceback
 from pixel_counter import zonal_stats
 
 
-def queue_zonal_stats(fim_run_dir, raster, output_dir, job_number):
+def queue_zonal_stats(fim_run_dir, raster_path_dict, output_dir, job_number):
     """
     This function sets up multiprocessing of the process_zonal_stats() function.
     
@@ -26,7 +26,7 @@ def queue_zonal_stats(fim_run_dir, raster, output_dir, job_number):
     for huc in fim_run_dir_list:
         vector = os.path.join(fim_run_dir, huc, 'demDerived_reaches_split_filtered_addedAttributes_crosswalked.gpkg')
         csv = os.path.join(output_dir, fim_version + '_' + huc + '_pixel_counts.csv')
-        procs_list.append([vector, csv, raster])
+        procs_list.append([vector, csv, raster_path_dict])
         
     # Initiate multiprocessing
     with Pool(processes=job_number) as pool:
@@ -65,17 +65,38 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--fim-run-dir',
                         help='Path to vector file.',
                         required=True)
-    parser.add_argument('-r', '--raster',
-                        help='Path to raster file.',
-                        required=True)
+    parser.add_argument('-n', '--nlcd',
+                        help='Path to National Land Cover Database raster file.',
+                        required=False,
+                        default="")
+    parser.add_argument('-l', '--levees',
+                        help='Path to levees raster file.',
+                        required=False,
+                        default="")
+    parser.add_argument('-b', '--bridges',
+                        help='Path to bridges file.',
+                        required=False,
+                        default="")
     parser.add_argument('-o', '--output-dir',
-                        help='Path to output dir.',
-                        required=True)
+                        help='Path to output directory where CSV files will be written.',
+                        required=False,
+                        default="")
     parser.add_argument('-j', '--job-number',
-                        help='Number of jobs.',
-                        required=False, default=1)
+                        help='Number of jobs to use.',
+                        required=False,
+                        default="")
 
+    # Assign variables from arguments.
+    args = vars(parser.parse_args())
+    nlcd = args['nlcd']
+    levees = args['levees']
+    bridges = args['bridges']
+
+    raster_path_dict = {'nlcd': nlcd, 'levees': levees, 'bridges': bridges}
+    
     args = vars(parser.parse_args())
     
-    queue_zonal_stats(args['fim_run_dir'], args['raster'], args['output_dir'], int(args['job_number']))
+    raster_path_dict = {'nlcd': args['nlcd']}
+    
+    queue_zonal_stats(args['fim_run_dir'], raster_path_dict, args['output_dir'], int(args['job_number']))
 
