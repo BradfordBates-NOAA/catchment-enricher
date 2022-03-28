@@ -1,5 +1,5 @@
 import numpy as np
-        
+
 
 def get_nlcd_counts(feat, masked):
     # Acquires information for table on each raster attribute per poly feature
@@ -45,7 +45,7 @@ def get_nlcd_counts(feat, masked):
 
 def get_levee_counts(feat, masked):
     pass
-
+    return
 
 def get_bridge_counts(feat_masked):
     pass
