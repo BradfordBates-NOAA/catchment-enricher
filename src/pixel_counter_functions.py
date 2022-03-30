@@ -44,8 +44,13 @@ def get_nlcd_counts(feat, masked):
 
 
 def get_levee_counts(feat, masked):
-    pass
-    return
+
+    # Acquires information for table on each levee attribute per catchment
+    feature_stats = {
+        'HydroID': feat.GetField('HydroID'),
+        'TotalLeveePixels': int(masked.count()),
+    }
+    return feature_stats
 
 def get_bridge_counts(feat_masked):
     pass
