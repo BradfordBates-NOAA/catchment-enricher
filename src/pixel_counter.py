@@ -30,6 +30,7 @@ import argparse
 from pandas import DataFrame
 import copy
 import pathlib
+import tempfile
 
 from pixel_counter_functions import (get_nlcd_counts, get_levee_counts, get_bridge_counts, get_nlcd_counts_inside_flood)
 
@@ -71,7 +72,10 @@ def make_flood_extent_polygon(flood_extent):
     # set up inputs for converting flood extent raster to polygon
     band = target.GetRasterBand(1)
     band.ReadAsArray()
-    outShapefile = "polygonized.shp"
+
+    outshape_location = tempfile.gettempdir()
+    outshape_location_path = os.path.abspath(outshape_location)
+    outShapefile = outshape_location_path + "/" + "polygonized.shp"
     driver = ogr.GetDriverByName("ESRI Shapefile")
     outDatasource = driver.CreateDataSource(outShapefile)
     outLayer = outDatasource.CreateLayer("buffalo", srs=None)
