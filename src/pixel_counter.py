@@ -34,6 +34,7 @@ import tempfile
 
 from pixel_counter_functions import (get_nlcd_counts, get_levee_counts, get_bridge_counts, get_nlcd_counts_inside_flood)
 
+
 # Set up error handler
 gdal.PushErrorHandler('CPLQuietErrorHandler')
 
@@ -113,7 +114,7 @@ def bbox_to_pixel_offsets(gt, bbox):
 
 # Main function that determines zonal statistics of raster classes in a polygon area
 def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_extent=False):
-    
+
     # Loop through different raster paths in the raster_path_dict and
     # perform zonal statistics on the files.
     for layer in raster_path_dict:
@@ -123,12 +124,14 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
         if layer == 'flood_extent' and raster_path_dict["nlcd"]!= "":
             vector_path = make_flood_extent_polygon(flood_extent)
             raster_path = raster_path_dict["nlcd"]
+
+
         # Opens raster file and sets path
         rds = gdal.Open(raster_path, GA_ReadOnly)
         assert rds
         rb = rds.GetRasterBand(1)
         rgt = rds.GetGeoTransform()
-    
+
         if nodata_value:
             nodata_value = float(nodata_value)
             rb.SetNoDataValue(nodata_value)
@@ -138,6 +141,7 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
         # Opens vector file and sets path
         vds = ogr.Open(vector_path)
         vlyr = vds.GetLayer(0)
+
         # Creates an in-memory numpy array of the source raster data covering the whole extent of the vector layer
         if global_src_extent:
             # use global source extent
@@ -146,7 +150,7 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
             # disadvantage: large vector extents may have big memory requirements
             src_offset = bbox_to_pixel_offsets(rgt, vlyr.GetExtent())
             src_array = rb.ReadAsArray(*src_offset)
-    
+
             # calculate new geotransform of the layer subset
             new_gt = (
                 (rgt[0] + (src_offset[0] * rgt[1])),
@@ -156,16 +160,16 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
                 0.0,
                 rgt[5]
             )
-    
+
         mem_drv = ogr.GetDriverByName('Memory')
         driver = gdal.GetDriverByName('MEM')
-    
+
         # Loop through vectors, as many as exist in file
         # Creates new list to contain their stats
         stats = []
         feat = vlyr.GetNextFeature()
         while feat is not None:
-    
+
             if not global_src_extent:
                 # use local source extent
                 # fastest option when you have fast disks and well indexed raster (ie tiled Geotiff)
@@ -173,7 +177,7 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
                 # disadvantage: lots of reads on the source raster
                 src_offset = bbox_to_pixel_offsets(rgt, feat.geometry().GetEnvelope())
                 src_array = rb.ReadAsArray(*src_offset)
-    
+
                 # calculate new geotransform of the feature subset
                 new_gt = (
                     (rgt[0] + (src_offset[0] * rgt[1])),
@@ -183,18 +187,18 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
                     0.0,
                     rgt[5]
                 )
-    
+
             # Create a temporary vector layer in memory
             mem_ds = mem_drv.CreateDataSource('out')
             mem_layer = mem_ds.CreateLayer('poly', None, ogr.wkbPolygon)
             mem_layer.CreateFeature(feat.Clone())
-    
+
             # Rasterize temporary vector layer
             rvds = driver.Create('', src_offset[2], src_offset[3], 1, gdal.GDT_Byte)
             rvds.SetGeoTransform(new_gt)
             gdal.RasterizeLayer(rvds, [1], mem_layer, burn_values=[1])
             rv_array = rvds.ReadAsArray()
-    
+
             # Mask the source data array with our current feature and get statistics (pixel count) of masked areas
             # we take the logical_not to flip 0<->1 to get the correct mask effect
             # we also mask out nodata values explictly
@@ -205,7 +209,7 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
                     np.logical_not(rv_array)
                 )
             )
-                
+
             # Call different counter functions depending on the raster's source.
             if layer == "nlcd":
                 feature_stats = get_nlcd_counts(feat, masked)
@@ -217,6 +221,7 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
                 feature_stats = get_nlcd_counts_inside_flood(feat, masked)
 
             stats.append(feature_stats)
+
             rvds = None
             mem_ds = None
             feat = vlyr.GetNextFeature()
@@ -264,9 +269,8 @@ if __name__ == "__main__":
     flood_extent = args['flood_extent']
 
     csv = args['csv']
-
-    raster_path_dict = {'nlcd': nlcd, 'levees': levees, 'bridges': bridges, 'flood_extent': flood_extent}
     
+    raster_path_dict = {'nlcd': nlcd, 'levees': levees, 'bridges': bridges, 'flood_extent': flood_extent}
     stats = zonal_stats(vector, raster_path_dict)
 
     # Export CSV
