@@ -23,18 +23,78 @@ from osgeo.gdalconst import *
 import numpy as np
 # Import file management library
 import sys
+import os
 # Import data analysis library
 import pandas as pd
 import argparse
 from pandas import DataFrame
+import copy
+import pathlib
+import tempfile
 
+from pixel_counter_functions import (get_nlcd_counts, get_levee_counts, get_bridge_counts, get_nlcd_counts_inside_flood)
 
-from pixel_counter_functions import (get_nlcd_counts, get_levee_counts, get_bridge_counts)
 
 # Set up error handler
 gdal.PushErrorHandler('CPLQuietErrorHandler')
 
+# Function to pologonize flood extent
+def make_flood_extent_polygon(flood_extent):
+    flood_extent_dataset = gdal.Open(flood_extent)
+    cols = flood_extent_dataset.RasterXSize
+    rows = flood_extent_dataset.RasterYSize
 
+    # Get some metadata to filter out NaN values
+    flood_extent_raster = flood_extent_dataset.GetRasterBand(1)
+    noDataVal = flood_extent_raster.GetNoDataValue()  # no data value
+    scaleFactor = flood_extent_raster.GetScale()  # scale factor
+
+    # Assign flood_extent No Data Values to NaN
+    flood_extent_array = flood_extent_dataset.GetRasterBand(1).ReadAsArray(0, 0, cols, rows).astype(np.float)
+    flood_extent_array[flood_extent_array == int(noDataVal)] = np.nan
+    flood_extent_array = flood_extent_array / scaleFactor
+
+    # Assign flood_extent Negative Values to NaN
+    flood_extent_nonzero_array = copy.copy(flood_extent_array)
+    flood_extent_nonzero_array[flood_extent_array < 0] = np.nan
+
+    # make temporary output file
+    mem_drv = gdal.GetDriverByName('MEM')
+    target = mem_drv.Create('temp_tif', cols, rows, 1, gdal.GDT_Float32)
+    target.GetRasterBand(1).WriteArray(flood_extent_nonzero_array)
+
+    # Add GeoTranform and Projection
+    geotrans = flood_extent_dataset.GetGeoTransform()
+    proj = flood_extent_dataset.GetProjection()
+    target.SetGeoTransform(geotrans)
+    target.SetProjection(proj)
+    target.FlushCache()
+
+    # set up inputs for converting flood extent raster to polygon
+    band = target.GetRasterBand(1)
+    band.ReadAsArray()
+
+    outshape_location = tempfile.gettempdir()
+    outshape_location_path = os.path.abspath(outshape_location)
+    outShapefile = outshape_location_path + "/" + "polygonized.shp"
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    outDatasource = driver.CreateDataSource(outShapefile)
+    outLayer = outDatasource.CreateLayer("buffalo", srs=None)
+
+    # Add the DN field
+    newField = ogr.FieldDefn('HydroID', ogr.OFTInteger)
+    outLayer.CreateField(newField)
+
+    # Polygonize
+    gdal.Polygonize(band, None, outLayer, 0, [], callback=None)
+    outDatasource.Destroy()
+    sourceRaster = None
+
+    fullpath = os.path.abspath(outShapefile)
+    print(fullpath)
+    print(type(fullpath))
+
+    return fullpath
 # Function that transforms vector dataset to raster
 def bbox_to_pixel_offsets(gt, bbox):
     originX = gt[0]
@@ -61,6 +121,10 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
         raster_path = raster_path_dict[layer]
         if raster_path == "":  # Only process if a raster path is provided
             continue
+        if layer == 'flood_extent' and raster_path_dict["nlcd"]!= "":
+            vector_path = make_flood_extent_polygon(flood_extent)
+            raster_path = raster_path_dict["nlcd"]
+
 
         # Opens raster file and sets path
         rds = gdal.Open(raster_path, GA_ReadOnly)
@@ -71,6 +135,9 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
         if nodata_value:
             nodata_value = float(nodata_value)
             rb.SetNoDataValue(nodata_value)
+        if vector_path == "":
+            print('No vector path provided. Continuing to next layer.')
+            continue
         # Opens vector file and sets path
         vds = ogr.Open(vector_path)
         vlyr = vds.GetLayer(0)
@@ -150,6 +217,8 @@ def zonal_stats(vector_path, raster_path_dict, nodata_value=None, global_src_ext
                 feature_stats = get_levee_counts(feat, masked)
             if layer == "bridges":
                 feature_stats = get_bridge_counts(feat, masked)
+            if layer == "flood_extent":
+                feature_stats = get_nlcd_counts_inside_flood(feat, masked)
 
             stats.append(feature_stats)
 
@@ -170,7 +239,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Computes pixel counts for raster classes within a vector area.')
     parser.add_argument('-v', '--vector',
                         help='Path to vector file.',
-                        required=True)
+                        required=False,
+                        default="")
     parser.add_argument('-n', '--nlcd',
                         help='Path to National Land Cover Database raster file.',
                         required=False,
@@ -183,6 +253,10 @@ if __name__ == "__main__":
                         help='Path to bridges file.',
                         required=False,
                         default="")
+    parser.add_argument('-f', '--flood_extent',
+                        help='Path to flood extent file.',
+                        required=False,
+                        default="")
     parser.add_argument('-c', '--csv',
                         help='Path to export csv file.',
                         required=True)
@@ -192,12 +266,15 @@ if __name__ == "__main__":
     nlcd = args['nlcd']
     levees = args['levees']
     bridges = args['bridges']
+    flood_extent = args['flood_extent']
 
     csv = args['csv']
-
-    raster_path_dict = {'nlcd': nlcd, 'levees': levees, 'bridges': bridges}
-
+    
+    raster_path_dict = {'nlcd': nlcd, 'levees': levees, 'bridges': bridges, 'flood_extent': flood_extent}
     stats = zonal_stats(vector, raster_path_dict)
+
     # Export CSV
     df = pd.DataFrame(stats)
-    df.to_csv(csv, index=False)
+    result = df[(df >= 0).all(axis=1)]
+    df2 = pd.DataFrame(result)
+    df2.to_csv(csv, index=False)

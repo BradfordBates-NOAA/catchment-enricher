@@ -1,5 +1,43 @@
 import numpy as np
+def get_nlcd_counts_inside_flood(feat,masked):
+    # Gets NLCD Counds inside flood extent
+    feature_stats = {
+        'f_HydroID': feat.GetField('HydroID'),
+        'f_TotalPixels': int(masked.count()),
+        'f_lulc_11': np.count_nonzero((masked == [11])),
+        'f_lulc_12': np.count_nonzero((masked == [12])),
+        'f_lulc_21': np.count_nonzero((masked == [21])),
+        'f_lulc_22': np.count_nonzero((masked == [22])),
+        'f_lulc_23': np.count_nonzero((masked == [23])),
+        'f_lulc_24': np.count_nonzero((masked == [24])),
+        'f_lulc_31': np.count_nonzero((masked == [31])),
+        'f_lulc_41': np.count_nonzero((masked == [41])),
+        'f_lulc_42': np.count_nonzero((masked == [42])),
+        'f_lulc_43': np.count_nonzero((masked == [43])),
+        'f_lulc_51': np.count_nonzero((masked == [51])),
+        'f_lulc_52': np.count_nonzero((masked == [52])),
+        'f_lulc_71': np.count_nonzero((masked == [71])),
+        'f_lulc_72': np.count_nonzero((masked == [72])),
+        'f_lulc_73': np.count_nonzero((masked == [73])),
+        'f_lulc_74': np.count_nonzero((masked == [74])),
+        'f_lulc_81': np.count_nonzero((masked == [81])),
+        'f_lulc_82': np.count_nonzero((masked == [82])),
+        'f_lulc_90': np.count_nonzero((masked == [90])),
+        'f_lulc_95': np.count_nonzero((masked == [95])),
+        'f_lulc_1': np.count_nonzero((masked == [11])) + np.count_nonzero((masked == [12])),
+        'f_lulc_2': np.count_nonzero((masked == [21])) + np.count_nonzero((masked == [22]))
+                  + np.count_nonzero((masked == [23])) + np.count_nonzero((masked == [24])),
+        'f_lulc_3': np.count_nonzero((masked == [31])),
+        'f_lulc_4': np.count_nonzero((masked == [41])) + np.count_nonzero((masked == [42]))
+                  + np.count_nonzero((masked == [43])),
+        'f_lulc_5': np.count_nonzero((masked == [51])) + np.count_nonzero((masked == [52])),
+        'f_lulc_7': np.count_nonzero((masked == [71])) + np.count_nonzero((masked == [72]))
+                  + np.count_nonzero((masked == [73])) + np.count_nonzero((masked == [74])),
+        'f_lulc_8': np.count_nonzero((masked == [81])) + np.count_nonzero((masked == [82])),
+        'f_lulc_9': np.count_nonzero((masked == [90])) + np.count_nonzero((masked == [95]))
 
+    }
+    return feature_stats
 
 def get_nlcd_counts(feat, masked):
     # Acquires information for table on each raster attribute per poly feature
