@@ -1,0 +1,22 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Catchment Enricher Repository
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Brad
+    family-names: Bates
+    email: bradford.bates@noaa.gov
+    affiliation: Lynker
+  - given-names: 'Anuska '
+    family-names: Narayanan
+    email: anarayanan1@crimson.ua.edu
+    affiliation: The University of Alabama
+  - given-names: Sophie
+    family-names: Williams
+    email: scwilliams8@crimson.ua.edu
+    affiliation: The University of Alabama
